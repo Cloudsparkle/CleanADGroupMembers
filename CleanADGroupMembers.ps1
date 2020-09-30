@@ -43,6 +43,21 @@ function Get-ADGroupMemberRecursive
     }
 }
 
+#Making sure we can have those fancy messageboxes working...
+Add-Type -AssemblyName PresentationFramework
+
+Write-Host "Checking for elevated permissions..."
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) 
+    {
+    [System.Windows.MessageBox]::Show("Insufficient permissions to run this script. Open the PowerShell console as an administrator and run this script again.","Error","OK","Error")
+    exit
+    }
+else 
+    {
+    Write-Host "Code is running as administrator — go on executing the script..." -ForegroundColor Green
+    }
+
+
 #Initialize variables
 $SelectedDomain = ""
 $ADGroup = ""
@@ -53,7 +68,7 @@ $CSVFile = "c:\temp\DisabledAccountsCleaned.csv"
 #Initializing Script Variables
 $csvContents = @() # Create the empty array that will eventually be the CSV file
 
-Add-Type -AssemblyName PresentationFramework
+
 
 #Get the AD DomainName
 $ADForestInfo = Get-ADForest
@@ -131,13 +146,15 @@ Try
         }
       }
     }
-    $message = "The AD Group " + $ADGroup.name + " has been cleaned."
-    [System.Windows.MessageBox]::Show($message,"Finished","OK","Asterisk")
-
     #Write the CSV output
     $csvContents | Export-CSV -path $CSVFile -NoTypeInformation
+   
+    $message = "The AD Group " + $ADGroup.name + " has been cleaned."
+    [System.Windows.MessageBox]::Show($message,"Finished","OK","Asterisk")
+    
   }
 Catch
   {
     [System.Windows.MessageBox]::Show("AD Group cleaning failed","Error","OK","Error")
-  }
+    exit
+  }   
